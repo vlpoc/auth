@@ -1,0 +1,5 @@
+protoc '--go_out=.' '--go_opt=paths=source_relative'  '--go-grpc_out=.' '--go-grpc_opt=paths=source_relative'  auth_rpc.proto
+go build && ./authsrv 
+go mod tidy
+openssl genrsa -out jake.priv 4096
+openssl rsa -in jake.priv -RSAPublicKey_out -out jake
