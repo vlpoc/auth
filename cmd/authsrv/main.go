@@ -13,27 +13,25 @@ import (
 	"os"
 	"path"
 
-	auth "github.com/vlpoc/auth"
-
 	authproto "github.com/vlpoc/proto/auth"
 	"google.golang.org/grpc"
 )
 
-func NewAuthSrv(keydir, address string) (*auth.AuthSrv, error) {
+func NewAuthSrv(keydir, address string) (*AuthSrv, error) {
 	domains, err := os.ReadDir(keydir)
 	if err != nil {
 		return nil, err
 	}
-	keys := make(map[auth.Domain]map[auth.ActorName]*rsa.PublicKey)
+	keys := make(map[Domain]map[ActorName]*rsa.PublicKey)
 	for _, d := range domains {
 		if !d.IsDir() {
 			continue
 		}
 		dname := d.Name()
-		names, ok := keys[auth.Domain(dname)]
+		names, ok := keys[Domain(dname)]
 		if !ok {
-			names = make(map[auth.ActorName]*rsa.PublicKey)
-			keys[auth.Domain(dname)] = names
+			names = make(map[ActorName]*rsa.PublicKey)
+			keys[Domain(dname)] = names
 		}
 		namedir := path.Join(keydir, dname)
 		ns, err := os.ReadDir(namedir)
@@ -67,7 +65,7 @@ func NewAuthSrv(keydir, address string) (*auth.AuthSrv, error) {
 				log.Printf("Failed to parse PKCS1 Public Key %s: %s", keypath, err)
 				continue
 			}
-			names[auth.ActorName(name)] = rsapubkey
+			names[ActorName(name)] = rsapubkey
 			log.Printf("Loaded %s/%s@%s", name, dname, address)
 		}
 	}
@@ -76,7 +74,7 @@ func NewAuthSrv(keydir, address string) (*auth.AuthSrv, error) {
 		log.Printf("Failed to generate private key: %s", err)
 		return nil, err
 	}
-	return &auth.AuthSrv{
+	return &AuthSrv{
 		Key:     pk,
 		Keys:    keys,
 		Address: address,

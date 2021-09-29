@@ -1,4 +1,4 @@
-package auth
+package main
 
 import (
 	"bytes"
@@ -12,13 +12,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/vlpoc/proto/auth"
+	"github.com/vlpoc/auth"
+	authproto "github.com/vlpoc/proto/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-const (
-	RSACERT = "RSA-CERT"
 )
 
 type (
@@ -27,19 +24,19 @@ type (
 )
 
 type AuthSrv struct {
-	auth.UnimplementedAuthServer
+	authproto.UnimplementedAuthServer
 	Key     *rsa.PrivateKey
 	Keys    map[Domain]map[ActorName]*rsa.PublicKey
 	Address string
 }
 
-func (s *AuthSrv) rsaCert(as auth.Auth_AuthenticateServer) error {
+func (s *AuthSrv) rsaCert(as authproto.Auth_AuthenticateServer) error {
 	anonce := make([]byte, 16)
 	n, err := rand.Read(anonce)
 	if err != nil || n < 16 {
 		return status.Errorf(codes.Aborted, "Auth Error")
 	}
-	err = as.Send(&auth.AuthMsg{Msg: &auth.AuthMsg_RsaStart{&auth.RSAStart{Authenticator: s.Address, Nonce: anonce}}})
+	err = as.Send(&authproto.AuthMsg{Msg: &authproto.AuthMsg_RsaStart{&authproto.RSAStart{Authenticator: s.Address, Nonce: anonce}}})
 	if err != nil {
 		return status.Errorf(codes.Aborted, "Bad Auth RPC")
 	}
@@ -84,7 +81,7 @@ func (s *AuthSrv) rsaCert(as auth.Auth_AuthenticateServer) error {
 		return status.Errorf(codes.Aborted, "Bad Signature")
 	}
 
-	err = as.Send(&auth.AuthMsg{Msg: &auth.AuthMsg_Cert{&auth.AuthCert{Actor: a, Expire: ts, Nonce: proof.Nonce, Pubkey: x509.MarshalPKCS1PublicKey(key), Signature: sig}}})
+	err = as.Send(&authproto.AuthMsg{Msg: &authproto.AuthMsg_Cert{&authproto.AuthCert{Actor: a, Expire: ts, Nonce: proof.Nonce, Pubkey: x509.MarshalPKCS1PublicKey(key), Signature: sig}}})
 	if err != nil {
 		return status.Errorf(codes.Aborted, "Bad Auth RPC")
 	}
@@ -93,8 +90,8 @@ func (s *AuthSrv) rsaCert(as auth.Auth_AuthenticateServer) error {
 	return nil
 }
 
-func (s *AuthSrv) Authenticate(as auth.Auth_AuthenticateServer) error {
-	err := as.Send(&auth.AuthMsg{Msg: &auth.AuthMsg_Protos{Protos: &auth.Protocols{Protocols: []string{RSACERT}}}})
+func (s *AuthSrv) Authenticate(as authproto.Auth_AuthenticateServer) error {
+	err := as.Send(&authproto.AuthMsg{Msg: &authproto.AuthMsg_Protos{Protos: &authproto.Protocols{Protocols: []string{auth.RSACERT}}}})
 	if err != nil {
 		return status.Errorf(codes.Aborted, "Bad Auth RPC")
 	}
@@ -107,14 +104,14 @@ func (s *AuthSrv) Authenticate(as auth.Auth_AuthenticateServer) error {
 		return status.Errorf(codes.Aborted, "Bad Auth RPC")
 	}
 	switch begin.Protocol {
-	case RSACERT:
+	case auth.RSACERT:
 		return s.rsaCert(as)
 	default:
 		return status.Errorf(codes.Aborted, "Invalid Auth Method")
 	}
 }
 
-func (s *AuthSrv) keyForActor(a *auth.Actor) (*rsa.PublicKey, error) {
+func (s *AuthSrv) keyForActor(a *authproto.Actor) (*rsa.PublicKey, error) {
 	names, ok := s.Keys[Domain(a.Domain)]
 	if !ok {
 		log.Printf("ERROR No such domain: %s", a.Domain)
@@ -132,7 +129,7 @@ func (s *AuthSrv) keyForActor(a *auth.Actor) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
-func (s *AuthSrv) Validate(ctx context.Context, in *auth.AuthCert) (*auth.Empty, error) {
+func (s *AuthSrv) Validate(ctx context.Context, in *authproto.AuthCert) (*authproto.Empty, error) {
 	var bs bytes.Buffer
 	bs.WriteString(in.Actor.ActorString())
 	binary.Write(&bs, binary.LittleEndian, in.Expire)
@@ -165,5 +162,5 @@ func (s *AuthSrv) Validate(ctx context.Context, in *auth.AuthCert) (*auth.Empty,
 		return nil, status.Errorf(codes.Aborted, "Invalid Cert")
 	}
 
-	return &auth.Empty{}, nil
+	return &authproto.Empty{}, nil
 }
