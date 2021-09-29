@@ -1,7 +1,8 @@
 syntax = "proto3";
 option go_package = "github.com/vlpoc/auth";
 
-// The auth service definition.
+// The auth service is responsible for authenticating actors in the
+// system.
 service Auth {
 	rpc Authenticate (stream AuthMsg) returns (stream AuthMsg);
 	// Validate returns Empty if AuthCert is successfully validated and 
@@ -22,20 +23,16 @@ message AuthMsg {
 	}
 }
 
-// None of domain, name, nor authenticator should
-// contain the characters `/` or `@`, since those
-// are used as separators in the Actor's string
-// form, which is name/domain@authenticator.
+// Neither domain nor name, should contain the characters `/` or `@`, since those
+// are used as separators in the Actor's string form, which is
+// name/domain@authenticator.
 //
-// Name should be the name of the actor.
-// The domain should be the domain the actor is
-// a member of. Domains just provide a namespace
-// for actors to reside in. This may be the empty string
-// if domains are not desired.
+// Name should be the name of the actor. The domain should be the domain the actor
+// is a member of. Domains just provide a namespace for actors to reside in. This
+// may be the empty string if domains are not desired.
 //
-// Authenticator should be filled out by the client,
-// and will be checked and used by the server. It is
-// a url at which the auth server can be reached.
+// Authenticator should be filled out by the client, and will be checked and used
+// by the server. It is a url at which the auth server can be reached.
 message Actor {
 	string	name          = 1;
 	string	domain        = 2;

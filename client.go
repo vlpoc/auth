@@ -9,58 +9,9 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"log"
-)
 
-// func PerformAuthentication(c AuthClient, key *rsa.PrivateKey, a *Actor) (*AuthCert, error) {
-// 	ac, err := c.Authenticate(context.Background())
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer ac.CloseSend()
-//
-// 	bs := make([]byte, 16)
-// 	n, err := rand.Read(bs)
-// 	if err != nil || n < 16 {
-// 		return nil, fmt.Errorf("Failed to generate challenge. Only received %d/16 bytes from cryptographic RNG", n)
-// 	}
-//
-// 	err = ac.Send(&AuthMsg{Msg: &AuthMsg_Req{&AuthRequest{Actor: a, Method: "RSA4096"}}})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	m, err := ac.Recv()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	chal := m.GetChal()
-// 	if chal == nil {
-// 		return nil, fmt.Errorf("Failed to receive challenge. Got %#v instead.", m)
-// 	}
-//
-// 	hash := sha512.Sum512(chal.Challenge)
-// 	sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA512, hash[:])
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	err = ac.Send(&AuthMsg{Msg: &AuthMsg_Chal{&Challenge{Challenge: sig}}})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	m, err = ac.Recv()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	cert := m.GetCert()
-// 	if cert == nil {
-// 		return nil, fmt.Errorf("Failed to receive cert. Got %#v instead.", m)
-// 	}
-// 	return cert, nil
-// }
+	grpc "google.golang.org/grpc"
+)
 
 func containsRSACert(protos []string) bool {
 	for _, p := range protos {
@@ -138,4 +89,32 @@ func PerformAuthentication(c AuthClient, key *rsa.PrivateKey, a *Actor) (*AuthCe
 
 	// TODO: Validate cert
 	return cert, nil
+}
+
+func AuthenticateRSA(conn string, key *rsa.PrivateKey, a *Actor) (*AuthCert, error) {
+	c, err := grpc.Dial(conn, grpc.WithInsecure())
+	if err != nil {
+		//log.Printf("Failed to dial auth: %s", err)
+		return nil, err
+	}
+	defer c.Close()
+	cli := NewAuthClient(c)
+	cert, err := PerformAuthentication(cli, key, &Actor{Name: "kyle", Domain: "users"})
+	if err != nil {
+		//log.Printf("Failed to authenticate: %s", err)
+		return nil, err
+	}
+	return cert, nil
+}
+
+func Validate(a *AuthCert) error {
+	conn, err := grpc.Dial(a.Actor.Authenticator, grpc.WithInsecure())
+	if err != nil {
+		//log.Printf("Failed to dial auth: %s", err)
+		return err
+	}
+	defer conn.Close()
+	cli := NewAuthClient(conn)
+	_, err = cli.Validate(context.Background(), a)
+	return err
 }
