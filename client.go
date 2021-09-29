@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/vlpoc/proto/auth"
 	grpc "google.golang.org/grpc"
 )
 
@@ -22,7 +23,7 @@ func containsRSACert(protos []string) bool {
 	return false
 }
 
-func PerformAuthentication(c AuthClient, key *rsa.PrivateKey, a *Actor) (*AuthCert, error) {
+func PerformAuthentication(c auth.AuthClient, key *rsa.PrivateKey, a *auth.Actor) (*auth.AuthCert, error) {
 	ac, err := c.Authenticate(context.Background())
 	if err != nil {
 		return nil, err
@@ -41,7 +42,7 @@ func PerformAuthentication(c AuthClient, key *rsa.PrivateKey, a *Actor) (*AuthCe
 		return nil, fmt.Errorf("Cannot authenticate with %s. Server accepts %v.", RSACERT, protos)
 	}
 
-	err = ac.Send(&AuthMsg{Msg: &AuthMsg_Begin{&BeginAuth{Protocol: RSACERT}}})
+	err = ac.Send(&auth.AuthMsg{Msg: &auth.AuthMsg_Begin{&auth.BeginAuth{Protocol: RSACERT}}})
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +73,7 @@ func PerformAuthentication(c AuthClient, key *rsa.PrivateKey, a *Actor) (*AuthCe
 		log.Printf("ERROR Failed to create nonce: %s", err)
 		return nil, fmt.Errorf("Failed to create nonce: %s", err)
 	}
-	err = ac.Send(&AuthMsg{Msg: &AuthMsg_Proof{&RSAProof{Actor: a, Nonce: cnonce, Signature: sig}}})
+	err = ac.Send(&auth.AuthMsg{Msg: &auth.AuthMsg_Proof{&auth.RSAProof{Actor: a, Nonce: cnonce, Signature: sig}}})
 	if err != nil {
 		log.Printf("ERROR Sending RSAProof: %s", err)
 		return nil, fmt.Errorf("Sending RSAProof: %s", err)
@@ -91,15 +92,15 @@ func PerformAuthentication(c AuthClient, key *rsa.PrivateKey, a *Actor) (*AuthCe
 	return cert, nil
 }
 
-func AuthenticateRSA(conn string, key *rsa.PrivateKey, a *Actor) (*AuthCert, error) {
+func AuthenticateRSA(conn string, key *rsa.PrivateKey, a *auth.Actor) (*auth.AuthCert, error) {
 	c, err := grpc.Dial(conn, grpc.WithInsecure())
 	if err != nil {
 		//log.Printf("Failed to dial auth: %s", err)
 		return nil, err
 	}
 	defer c.Close()
-	cli := NewAuthClient(c)
-	cert, err := PerformAuthentication(cli, key, &Actor{Name: "kyle", Domain: "users"})
+	cli := auth.NewAuthClient(c)
+	cert, err := PerformAuthentication(cli, key, &auth.Actor{Name: "kyle", Domain: "users"})
 	if err != nil {
 		//log.Printf("Failed to authenticate: %s", err)
 		return nil, err
@@ -107,14 +108,14 @@ func AuthenticateRSA(conn string, key *rsa.PrivateKey, a *Actor) (*AuthCert, err
 	return cert, nil
 }
 
-func Validate(a *AuthCert) error {
+func Validate(a *auth.AuthCert) error {
 	conn, err := grpc.Dial(a.Actor.Authenticator, grpc.WithInsecure())
 	if err != nil {
 		//log.Printf("Failed to dial auth: %s", err)
 		return err
 	}
 	defer conn.Close()
-	cli := NewAuthClient(conn)
+	cli := auth.NewAuthClient(conn)
 	_, err = cli.Validate(context.Background(), a)
 	return err
 }

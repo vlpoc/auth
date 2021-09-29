@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,7 +13,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/vlpoc/auth"
+	auth "github.com/vlpoc/auth"
+
+	authproto "github.com/vlpoc/proto/auth"
 	"google.golang.org/grpc"
 )
 
@@ -64,9 +67,6 @@ func NewAuthSrv(keydir, address string) (*auth.AuthSrv, error) {
 				log.Printf("Failed to parse PKCS1 Public Key %s: %s", keypath, err)
 				continue
 			}
-			// 			if rsapubkey.Size() < 4096 {
-			// 				log.Printf("Failed to load Public Key %s: Key size is %d, less than the required 4096.", keypath, rsapubkey.Size())
-			// 			}
 			names[auth.ActorName(name)] = rsapubkey
 			log.Printf("Loaded %s/%s@%s", name, dname, address)
 		}
@@ -83,20 +83,43 @@ func NewAuthSrv(keydir, address string) (*auth.AuthSrv, error) {
 	}, nil
 }
 
+var (
+	keypath  string
+	hostname string
+	port     int
+)
+
+func init() {
+	flag.StringVar(&keypath, "keypath", "", "The path to the directory containing keys for the authsrv users.")
+	flag.StringVar(&hostname, "hostname", "", "The fqdn at which this authsrv can be reached. Used for the Authenticator field in the Actor message.")
+	flag.IntVar(&port, "port", 8181, "The port on which authsrv will listen. Added to hostname to create the Authenticator field.")
+	flag.Parse()
+}
+
 func main() {
-	srv, err := NewAuthSrv("/Users/kyle.nusbaum/Documents/CodeBase/vlpoc-auth/cmd/authsrv/keys", "localhost:8181")
+	if keypath == "" {
+		log.Printf("Must specify keypath.")
+		flag.Usage()
+		os.Exit(1)
+	}
+	if hostname == "" {
+		log.Printf("Must specify hostname.")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	//srv, err := NewAuthSrv("/Users/kyle.nusbaum/Documents/CodeBase/vlpoc-auth/cmd/authsrv/keys", "localhost:8181")
+	srv, err := NewAuthSrv(keypath, fmt.Sprintf("%s:%d", hostname, port))
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:8181"))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	//log.Printf("Actor: [%s]", &auth.Actor{Name: "kyle", Domain: "users", Authenticator: "localhost:8181"})
-
 	grpcServer := grpc.NewServer()
-	auth.RegisterAuthServer(grpcServer, srv)
+	authproto.RegisterAuthServer(grpcServer, srv)
 	grpcServer.Serve(lis)
 }

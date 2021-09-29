@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 
-	"github.com/vlpoc/auth"
+	auth "github.com/vlpoc/auth"
+
+	authproto "github.com/vlpoc/proto/auth"
 )
 
 func main() {
@@ -32,7 +34,7 @@ func main() {
 		return
 	}
 
-	cert, err := auth.AuthenticateRSA("localhost:8181", rsaprivkey, &auth.Actor{Name: "kyle", Domain: "users"})
+	cert, err := auth.AuthenticateRSA("localhost:8181", rsaprivkey, &authproto.Actor{Name: "kyle", Domain: "users"})
 	if err != nil {
 		log.Printf("Failed auth: %s", err)
 		return
@@ -44,30 +46,4 @@ func main() {
 		log.Printf("Failed to validate cert: %s", err)
 		return
 	}
-
-	// 	conn, err := grpc.Dial("localhost:8181", grpc.WithInsecure())
-	// 	if err != nil {
-	// 		log.Printf("Failed to dial auth: %s", err)
-	// 		return
-	// 	}
-	// 	defer conn.Close()
-	// 	cli := auth.NewAuthClient(conn)
-	// 	cert, err := auth.PerformAuthentication(cli, rsaprivkey, &auth.Actor{Name: "kyle", Domain: "users"})
-	// 	if err != nil {
-	// 		log.Printf("Failed to authenticate: %s", err)
-	// 		return
-	// 	}
-	// 	log.Printf("Cert: %v", cert)
-	//
-	// 	//cert.Actor.Name = "jake"
-	//
-	// 	size := len(cert.Actor.Name) + len(cert.Actor.Domain) + len(cert.Actor.Authenticator) + 8 + len(cert.Nonce) + len(cert.Pubkey) + len(cert.Signature)
-	// 	log.Printf("Cert Length: %d bytes", size)
-	//
-	// 	_, err = cli.Validate(context.Background(), cert)
-	// 	if err != nil {
-	// 		log.Printf("Failed to validate: %s", err)
-	// 	} else {
-	// 		log.Printf("Validated cert.")
-	// 	}
 }
