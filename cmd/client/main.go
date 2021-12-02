@@ -1,49 +1,27 @@
 package main
 
 import (
-	"crypto/x509"
-	"encoding/pem"
-	"io/ioutil"
-	"log"
+	"fmt"
+	"os"
 
-	auth "github.com/vlpoc/auth"
-
-	authproto "github.com/vlpoc/proto/auth"
+	"github.com/vlpoc/auth"
 )
 
 func main() {
-	keypath := "/Users/kyle.nusbaum/Documents/CodeBase/vlpoc-auth/cmd/authsrv/kyle.priv.pem"
-	privPem, err := ioutil.ReadFile(keypath)
+	srv, err := auth.NewAuthSrv("localhost:8181", "/Users/kyle.nusbaum/Library/Application Support/vlpoc-authsrv/ca.crt.pem")
 	if err != nil {
-		log.Printf("Failed to read %s: %s", keypath, err)
-		return
+		fmt.Printf("Failed to create authsrv client: %s\n", err)
+		os.Exit(1)
 	}
-	//pub, err := pem.D
-	privBlock, _ := pem.Decode(privPem)
-	if privBlock == nil {
-		log.Printf("Failed to decrypt %s. No PEM block.", keypath)
-		return
-	}
-	if privBlock.Type != "RSA PRIVATE KEY" {
-		log.Printf("Failed to validate %s: type = %s", keypath, privBlock.Type)
-		return
-	}
-	rsaprivkey, err := x509.ParsePKCS1PrivateKey(privBlock.Bytes)
+	a, err := srv.Login("kyle", "hello")
 	if err != nil {
-		log.Printf("Failed to parse PKCS1 Private Key %s: %s", keypath, err)
-		return
+		fmt.Printf("Failed to login: %s\n", err)
+		os.Exit(1)
 	}
+	fmt.Printf("Received Actor: %s\n", a)
 
-	cert, err := auth.AuthenticateRSA("localhost:8181", rsaprivkey, &authproto.Actor{Name: "kyle", Domain: "users"})
+	err = srv.Test(a)
 	if err != nil {
-		log.Printf("Failed auth: %s", err)
-		return
-	}
-	log.Printf("received cert for actor: %s", cert.Actor.ActorString())
-
-	err = auth.Validate(cert)
-	if err != nil {
-		log.Printf("Failed to validate cert: %s", err)
-		return
+		fmt.Printf("Test error: %s\n", err)
 	}
 }
