@@ -23,5 +23,6 @@ steps:
     args:
     - run
     - --filename=gke-deploy.yaml
+    - --image=us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:$SHORT_SHA
     - --location=us-central1-a
     - --cluster=nginx-1-cluster
