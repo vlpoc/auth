@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	srv, err := auth.NewAuthSrv("localhost:8181", "/Users/kyle.nusbaum/Library/Application Support/vlpoc-authsrv/ca.crt.pem")
+	srv, err := auth.NewAuthSrv("34.134.29.200:8181", "/Users/kyle.nusbaum/Library/Application Support/vlpoc-authsrv/ca.crt.pem")
 	if err != nil {
 		fmt.Printf("Failed to create authsrv client: %s\n", err)
 		os.Exit(1)

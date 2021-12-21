@@ -45,17 +45,20 @@ func NewAuthSrv(authdir, organization string) (*AuthSrv, error) {
 	certfile := path.Join(authdir, "authsrv.crt.pem")
 	keyfile := path.Join(authdir, "authsrv.key.pem")
 	if _, err := os.Stat(cacertfile); os.IsNotExist(err) {
+		log.Printf("Could not find %s. Creating.", cacertfile)
 		err := createCA(cacertfile, cakeyfile, organization)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if _, err := os.Stat(certfile); os.IsNotExist(err) {
+		log.Printf("Could not find %s. Creating.", certfile)
 		err := generateAuthCert(certfile, keyfile, cacertfile, cakeyfile, "auth@"+organization)
 		if err != nil {
 			return nil, err
 		}
 	} else if _, err := os.Stat(keyfile); os.IsNotExist(err) {
+		log.Printf("Could not find %s. Creating %s and %s", keyfile, certfile, keyfile)
 		err := generateAuthCert(certfile, keyfile, cacertfile, cakeyfile, "auth@"+organization)
 		if err != nil {
 			return nil, err

@@ -1,0 +1,21 @@
+steps:
+  # build the container image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - -t
+      - us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:latest
+      - -f
+      - authsrv-dockerfile
+      - .
+  # push container image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - push
+      - us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:latest
+  - name: "gcr.io/cloud-builders/gke-deploy"
+    args:
+    - run
+    - --filename=gke-deploy.yaml
+    - --location=us-central1-a
+    - --cluster=nginx-1-cluster

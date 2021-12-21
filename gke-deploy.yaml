@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authsrv
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: authsrv
+  template:
+    metadata:
+      labels:
+        app: authsrv
+    spec:
+      containers:
+      - image: us-east1-docker.pkg.dev/ascendant-quest-124500/vlpoc/authsrv@sha256:7dbe16e8cedc6883ef92c7615a50e07ffa9db305a865234de8a1021b923905b9
+        ports:
+        - containerPort: 8181
+          protocol: TCP
+        imagePullPolicy: IfNotPresent
+        name: authsrv-sha256-1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: authsrv-cert
+          mountPath: "/etc/authsrv"
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: authsrv-cert
+          secret:
+            secretName: vlpoc-authsrv
+---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: authsrv
+#spec:
+#  selector:
+#    app: authsrv
+#  ports:
+#    - protocol: TCP
+#      port: 8181
+#      targetPort: 8181
+#  type: NodePort
+apiVersion: v1
+kind: Service
+metadata:
+  name: authsrv
+  labels:
+    app: authsrv
+  annotations:
+    cloud.google.com/neg: '{"exposed_ports": {"8181":{}}}'
+spec:
+  ports:
+  - name: 8181-8181
+    port: 8181
+    protocol: TCP
+    targetPort: 8181
+  selector:
+    app: authsrv
+  # Use LoadBalancer type instead of ClusterIP
+  type: LoadBalancer
