@@ -35,9 +35,9 @@ spec:
       securityContext: {}
       terminationGracePeriodSeconds: 30
       volumes:
-        - name: authsrv-cert
+        - name: authsrv-authdir
           secret:
-            secretName: vlpoc-authsrv
+            secretName: authsrv-authdir
 ---
 #apiVersion: v1
 #kind: Service
