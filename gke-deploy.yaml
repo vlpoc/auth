@@ -13,7 +13,7 @@ spec:
         app: authsrv
     spec:
       containers:
-      - image: us-east1-docker.pkg.dev/ascendant-quest-124500/vlpoc/authsrv@sha256:7dbe16e8cedc6883ef92c7615a50e07ffa9db305a865234de8a1021b923905b9
+      - image: us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:$SHORT_SHA
         ports:
         - containerPort: 8181
           protocol: TCP

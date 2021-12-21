@@ -5,6 +5,8 @@ steps:
       - build
       - -t
       - us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:latest
+      - -t
+      - us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:$SHORT_SHA
       - -f
       - authsrv-dockerfile
       - .
@@ -13,6 +15,10 @@ steps:
     args:
       - push
       - us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:latest
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - push
+      - us-east1-docker.pkg.dev/$PROJECT_ID/vlpoc/authsrv:$SHORT_SHA
   - name: "gcr.io/cloud-builders/gke-deploy"
     args:
     - run
