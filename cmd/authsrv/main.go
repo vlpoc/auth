@@ -15,6 +15,7 @@ import (
 var port = 8181
 
 func main() {
+	log.Printf("Starting authsrv...")
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		log.Fatalf("Could not locate authsrv config dir: %s", err)
