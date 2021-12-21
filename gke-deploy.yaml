@@ -17,6 +17,9 @@ spec:
         ports:
         - containerPort: 8181
           protocol: TCP
+        env:
+        - name: AUTHSRV_AUTHDIR
+          value: "/etc/authsrv"
         imagePullPolicy: IfNotPresent
         name: authsrv-sha256-1
         resources: {}

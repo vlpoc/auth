@@ -15,17 +15,21 @@ import (
 var port = 8181
 
 func main() {
+	authdir := os.Getenv("AUTHSRV_AUTHDIR")
 	log.Printf("Starting authsrv...")
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		log.Fatalf("Could not locate authsrv config dir: %s", err)
+	if authdir == "" {
+		dir, err := os.UserConfigDir()
+		if err != nil {
+			log.Fatalf("Could not locate authsrv config dir: %s", err)
+		}
+		authdir = path.Join(dir, "vlpoc-authsrv")
+		err = os.MkdirAll(authdir, 0700)
+		if err != nil {
+			log.Fatalf("Failed to create authdir %s: %s", authdir, err)
+		}
 	}
-	authdir := path.Join(dir, "vlpoc-authsrv")
-	err = os.MkdirAll(authdir, 0700)
-	if err != nil {
-		log.Fatalf("Failed to create authdir %s: %s", authdir, err)
-	}
-	authSrv, err := NewAuthSrv(authdir, "vlpoc.com")
+	authSrv, err := NewAuthSrv(authdir, "vlpoc.com", false)
+	//authSrv, err := NewAuthSrv(certfile, keyfile, "vlpoc.com")
 	if err != nil {
 		log.Fatalf("Failed to start authsrv: %s", err)
 	}

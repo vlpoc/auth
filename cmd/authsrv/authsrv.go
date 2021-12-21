@@ -39,25 +39,26 @@ type AuthSrv struct {
 // named ca.cert.pem and ca.key.pem in authdir, NewAuthSrv will
 // create them. The ca cert should be distributed to clients so
 // that they can authenticate services on the network.
-func NewAuthSrv(authdir, organization string) (*AuthSrv, error) {
+func NewAuthSrv(authdir, organization string, create bool) (*AuthSrv, error) {
 	cacertfile := path.Join(authdir, "ca.crt.pem")
 	cakeyfile := path.Join(authdir, "ca.key.pem")
 	certfile := path.Join(authdir, "authsrv.crt.pem")
 	keyfile := path.Join(authdir, "authsrv.key.pem")
-	if _, err := os.Stat(cacertfile); os.IsNotExist(err) {
+	log.Printf("AUTHDIR: %s", authdir)
+	if _, err := os.Stat(cacertfile); os.IsNotExist(err) && create {
 		log.Printf("Could not find %s. Creating.", cacertfile)
 		err := createCA(cacertfile, cakeyfile, organization)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if _, err := os.Stat(certfile); os.IsNotExist(err) {
+	if _, err := os.Stat(certfile); os.IsNotExist(err) && create {
 		log.Printf("Could not find %s. Creating.", certfile)
 		err := generateAuthCert(certfile, keyfile, cacertfile, cakeyfile, "auth@"+organization)
 		if err != nil {
 			return nil, err
 		}
-	} else if _, err := os.Stat(keyfile); os.IsNotExist(err) {
+	} else if _, err := os.Stat(keyfile); os.IsNotExist(err) && create {
 		log.Printf("Could not find %s. Creating %s and %s", keyfile, certfile, keyfile)
 		err := generateAuthCert(certfile, keyfile, cacertfile, cakeyfile, "auth@"+organization)
 		if err != nil {
